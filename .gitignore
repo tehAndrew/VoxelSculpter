@@ -1,0 +1,31 @@
+# Gradle files
+.gradle/
+build/
+app/build/
+
+# Local configuration file
+local.properties
+
+# Android Studio files
+.idea/
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+
+# Miscellaneous
+.DS_Store
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Log files
+*.log
+
+# Keystore files
+*.keystore
+
+# Other files to ignore
+*.iml
