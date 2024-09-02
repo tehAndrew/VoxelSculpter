@@ -1,6 +1,7 @@
 package se.umu.ad.anpa0292.voxelsculpter
 
 import android.opengl.Matrix
+import android.util.Log
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
@@ -64,11 +65,16 @@ class PerspectiveCamera(
         )
     }
 
-    fun setRotation(horizontalAngle: Float, verticalAngle: Float) {
+    fun rotate(horDelta: Float, verDelta: Float) {
         Matrix.setIdentityM(viewMatrix, 0)
 
-        this.horizontalAngle = horizontalAngle
-        this.verticalAngle = verticalAngle
+        horizontalAngle += horDelta
+        verticalAngle += verDelta
+
+        if (verticalAngle < -89f) verticalAngle = -89f
+        if (verticalAngle > 89f) verticalAngle = 89f
+
+        Log.d("KUK", verticalAngle.toString())
 
         updateViewMatrix()
         updateViewProjectionMatrix()

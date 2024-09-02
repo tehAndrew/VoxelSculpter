@@ -83,11 +83,8 @@ fun linkShaders(vertexShader: Int, fragmentShader: Int): Int {
 }
 
 class EditorRenderer(private val context: Context) : GLSurfaceView.Renderer {
-    private lateinit var camera: PerspectiveCamera
+    lateinit var camera: PerspectiveCamera
     private lateinit var voxel: Voxel
-
-    private var temp1 = 0f
-    private var temp2 = 0f
 
     private lateinit var vertexBuffer: FloatBuffer
     private lateinit var indexBuffer: ShortBuffer
@@ -230,10 +227,5 @@ class EditorRenderer(private val context: Context) : GLSurfaceView.Renderer {
         // Unbind buffers and disable vertex attributes
         GLES20.glDisableVertexAttribArray(GLES20.glGetAttribLocation(program, "vPosition"))
         GLES20.glDisableVertexAttribArray(GLES20.glGetAttribLocation(program, "vNormal"))
-
-        temp1 += 0.01f
-        temp2 += 0.02f
-
-        camera.setRotation(temp1, temp2)
     }
 }

@@ -35,9 +35,12 @@ object VectorMath3D {
         require(r >= 0) {"r must be non-negative."}
         require(theta in -90f..90f) {"theta must be in range [-90, 90]."}
 
-        destVec[0] = r * cos(theta) * sin(phi)
-        destVec[1] = r * sin(theta)
-        destVec[2] = r * cos(theta) * cos(phi)
+        val thetaRad = toRadian(theta)
+        val phiRad = toRadian(phi)
+
+        destVec[0] = r * cos(thetaRad) * sin(phiRad)
+        destVec[1] = r * sin(thetaRad)
+        destVec[2] = r * cos(thetaRad) * cos(phiRad)
     }
 
     /**
@@ -66,5 +69,9 @@ object VectorMath3D {
         destVec[0] = lhsVec[0] + rhsVec[0]
         destVec[1] = lhsVec[1] + rhsVec[1]
         destVec[2] = lhsVec[2] + rhsVec[2]
+    }
+
+    private fun toRadian(degree: Float): Float {
+        return (degree / 180 * Math.PI).toFloat()
     }
 }
