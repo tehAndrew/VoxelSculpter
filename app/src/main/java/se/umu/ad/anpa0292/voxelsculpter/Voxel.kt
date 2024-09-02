@@ -83,7 +83,7 @@ class Voxel(x: Float, y: Float, z: Float) {
             0.0f, -1.0f, 0.0f
         )
 
-        val indices = shortArrayOf(
+        val solidIndices = shortArrayOf(
             // Front face
             0, 1, 2, 0, 2, 3,
 
@@ -101,6 +101,17 @@ class Voxel(x: Float, y: Float, z: Float) {
 
             // Bottom face
             20, 21, 22, 20, 22, 23
+        )
+
+        val wireframeIndices = shortArrayOf(
+            // Front face edges
+            0, 1, 1, 2, 2, 3, 3, 0,
+
+            // Back face edges
+            4, 5, 5, 6, 6, 7, 7, 4,
+
+            // Connecting edges between front and back faces
+            0, 4, 1, 5, 2, 6, 3, 7
         )
     }
 

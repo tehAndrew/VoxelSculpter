@@ -74,8 +74,6 @@ class PerspectiveCamera(
         if (verticalAngle < -89f) verticalAngle = -89f
         if (verticalAngle > 89f) verticalAngle = 89f
 
-        Log.d("KUK", verticalAngle.toString())
-
         updateViewMatrix()
         updateViewProjectionMatrix()
     }
