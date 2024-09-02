@@ -21,7 +21,7 @@ class PerspectiveCamera(
     private val fovY = 45f // Field of view in the Y direction
     private var aspectRatio = 16f / 9f // Aspect ratio (width / height)
     private val near = 1f
-    private val far = 100f
+    private val far = 200f
 
     // Transforms
     private val viewMatrix = FloatArray(16)
@@ -79,7 +79,7 @@ class PerspectiveCamera(
     }
 
     fun zoom(zoomFactor: Float) {
-        distance = (distance + zoomFactor).coerceIn(10f, 50f)
+        distance = (distance + zoomFactor).coerceIn(5f, 80f)
 
         updateViewMatrix()
         updateViewProjectionMatrix()
