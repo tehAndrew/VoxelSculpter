@@ -8,7 +8,7 @@ import kotlin.math.sqrt
 
 class PerspectiveCamera(
     private val target: FloatArray,
-    private val distance: Float
+    private var distance: Float
 ) {
 
     // The up direction of the camera
@@ -73,6 +73,13 @@ class PerspectiveCamera(
 
         if (verticalAngle < -89f) verticalAngle = -89f
         if (verticalAngle > 89f) verticalAngle = 89f
+
+        updateViewMatrix()
+        updateViewProjectionMatrix()
+    }
+
+    fun zoom(zoomFactor: Float) {
+        distance = (distance + zoomFactor).coerceIn(10f, 50f)
 
         updateViewMatrix()
         updateViewProjectionMatrix()

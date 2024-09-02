@@ -127,7 +127,34 @@ class EditorRenderer(private val context: Context) : GLSurfaceView.Renderer {
         vertexBuffer = ByteBuffer.allocateDirect(Voxel.vertices.size * 4)
             .order(ByteOrder.nativeOrder())
             .asFloatBuffer()
-        vertexBuffer.put(Voxel.vertices).position(0)
+            .apply {
+                put(Voxel.vertices)
+                position(0)
+            }
+
+        normalBuffer = ByteBuffer.allocateDirect(Voxel.normals.size * 4)
+            .order(ByteOrder.nativeOrder())
+            .asFloatBuffer()
+            .apply {
+                put(Voxel.normals)
+                position(0)
+            }
+
+        solidIndexBuffer = ByteBuffer.allocateDirect(Voxel.solidIndices.size * 2)
+            .order(ByteOrder.nativeOrder())
+            .asShortBuffer()
+            .apply {
+                put(Voxel.solidIndices)
+                position(0)
+            }
+
+        wireFrameIndexBuffer = ByteBuffer.allocateDirect(Voxel.wireframeIndices.size * 2)
+            .order(ByteOrder.nativeOrder())
+            .asShortBuffer()
+            .apply {
+                put(Voxel.wireframeIndices)
+                position(0)
+            }
 
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, vbo[0])
         GLES20.glBufferData(
@@ -137,11 +164,6 @@ class EditorRenderer(private val context: Context) : GLSurfaceView.Renderer {
             GLES20.GL_STATIC_DRAW
         )
 
-        normalBuffer = ByteBuffer.allocateDirect(Voxel.normals.size * 4)
-            .order(ByteOrder.nativeOrder())
-            .asFloatBuffer()
-        normalBuffer.put(Voxel.normals).position(0)
-
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, vbo[1])
         GLES20.glBufferData(
             GLES20.GL_ARRAY_BUFFER,
@@ -150,22 +172,13 @@ class EditorRenderer(private val context: Context) : GLSurfaceView.Renderer {
             GLES20.GL_STATIC_DRAW
         )
 
-        solidIndexBuffer = ByteBuffer.allocateDirect(Voxel.solidIndices.size * 2)
-            .order(ByteOrder.nativeOrder())
-            .asShortBuffer()
-        solidIndexBuffer.put(Voxel.solidIndices).position(0)
-
         GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, ebo[0])
         GLES20.glBufferData(
             GLES20.GL_ELEMENT_ARRAY_BUFFER,
             Voxel.solidIndices.size * 2,
             solidIndexBuffer,
-            GLES20.GL_STATIC_DRAW)
-
-        wireFrameIndexBuffer = ByteBuffer.allocateDirect(Voxel.wireframeIndices.size * 2)
-            .order(ByteOrder.nativeOrder())
-            .asShortBuffer()
-        wireFrameIndexBuffer.put(Voxel.wireframeIndices).position(0)
+            GLES20.GL_STATIC_DRAW
+        )
 
         GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, ebo[1])
         GLES20.glBufferData(
