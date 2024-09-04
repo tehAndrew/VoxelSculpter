@@ -2,18 +2,11 @@ package se.umu.ad.anpa0292.voxelsculpter
 
 import android.opengl.Matrix
 import android.util.Log
-import kotlin.math.cos
-import kotlin.math.sin
-import kotlin.math.sqrt
 
 class PerspectiveCamera(
     private val target: FloatArray,
     private var distance: Float
 ) {
-
-    // The up direction of the camera
-    private val up = floatArrayOf(0f, 1f, 0f)
-
     private var verticalAngle = 0f
     private var horizontalAngle = 0f
 
@@ -43,7 +36,7 @@ class PerspectiveCamera(
             viewMatrix, 0,
             position[0], position[1], position[2],
             target[0], target[1], target[2],
-            up[0], up[1], up[2]
+            0f, 1f, 0f
         )
     }
 
@@ -85,6 +78,31 @@ class PerspectiveCamera(
         updateViewProjectionMatrix()
     }
 
+    fun pan(horDelta: Float, verDelta: Float) {
+        // Calculate forward vector
+        val forward = FloatArray(3)
+        VectorMath3D.sub(forward, target, getPosition())
+        VectorMath3D.normalize(forward, forward)
+
+        // Calculate right vector
+        val right = FloatArray(3)
+        VectorMath3D.cross(right, forward, floatArrayOf(0f, 1f, 0f))
+        VectorMath3D.normalize(right, right)
+
+        val up = FloatArray(3)
+        VectorMath3D.cross(up, right, forward)
+        VectorMath3D.normalize(up, up)
+
+        VectorMath3D.scale(right, horDelta, right)
+        VectorMath3D.add(target, target, right)
+
+        VectorMath3D.scale(up, verDelta, up)
+        VectorMath3D.add(target, target, up)
+
+        updateViewMatrix()
+        updateViewProjectionMatrix()
+    }
+
     fun setAspectRatio(width: Int, height: Int) {
         // Calculate the aspect ratio based on screen dimensions
         aspectRatio = width.toFloat() / height.toFloat()
@@ -95,7 +113,7 @@ class PerspectiveCamera(
     fun getPosition(): FloatArray {
         val position = FloatArray(3)
         VectorMath3D.sphericalToCartesianCoords(position, distance, verticalAngle, horizontalAngle)
-        VectorMath3D.additionVV(position, target, position)
+        VectorMath3D.add(position, target, position)
         return position
     }
 

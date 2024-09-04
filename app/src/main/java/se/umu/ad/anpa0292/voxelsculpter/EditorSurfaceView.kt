@@ -18,6 +18,7 @@ class EditorSurfaceView(context: Context, attributeSet: AttributeSet) : GLSurfac
     companion object {
         const val ROTATION_SENSITIVITY = 0.3f
         const val ZOOM_SENSITIVITY = 0.1f
+        const val PAN_SENSITIVITY = 0.01f
     }
 
     init {
@@ -54,6 +55,15 @@ class EditorSurfaceView(context: Context, attributeSet: AttributeSet) : GLSurfac
             }
             2 -> {
                 prevDistance = calculateDistance(event)
+
+                val x1 = event.getX(0)
+                val y1 = event.getY(0)
+                val x2 = event.getX(1)
+                val y2 = event.getY(1)
+
+                // TODO maybe use separate vars
+                prevX = (x1 + x2) / 2
+                prevY = (y1 + y2) / 2
             }
         }
     }
@@ -79,8 +89,28 @@ class EditorSurfaceView(context: Context, attributeSet: AttributeSet) : GLSurfac
     private fun handlePinchZoom(event: MotionEvent) {
         val distance = calculateDistance(event)
         val zoomDelta = prevDistance - distance
+
         renderer.camera.zoom(zoomDelta * ZOOM_SENSITIVITY)
         prevDistance = distance
+
+        val x1 = event.getX(0)
+        val y1 = event.getY(0)
+        val x2 = event.getX(1)
+        val y2 = event.getY(1)
+
+        val x = (x1 + x2) / 2
+        val y = (y1 + y2) / 2
+
+        val dx = x - prevX
+        val dy = y - prevY
+        renderer.camera.pan(
+            -dx * PAN_SENSITIVITY,
+            dy * PAN_SENSITIVITY
+        )
+
+        // TODO maybe use separate vars
+        prevX = x
+        prevY = y
     }
 
     private fun calculateDistance(event: MotionEvent): Float {
