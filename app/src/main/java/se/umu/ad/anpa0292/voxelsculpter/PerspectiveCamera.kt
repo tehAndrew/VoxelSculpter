@@ -4,7 +4,7 @@ import android.opengl.Matrix
 import android.util.Log
 
 class PerspectiveCamera(
-    private val target: FloatArray,
+    private var target: Vector3D,
     private var distance: Float
 ) {
     private var verticalAngle = 0f
@@ -34,8 +34,8 @@ class PerspectiveCamera(
 
         Matrix.setLookAtM(
             viewMatrix, 0,
-            position[0], position[1], position[2],
-            target[0], target[1], target[2],
+            position.x, position.y, position.z,
+            target.x, target.y, target.z,
             0f, 1f, 0f
         )
     }
@@ -80,7 +80,7 @@ class PerspectiveCamera(
 
     fun pan(horDelta: Float, verDelta: Float) {
         // Calculate forward vector
-        val forward = FloatArray(3)
+        /*val forward = FloatArray(3)
         VectorMath3D.sub(forward, target, getPosition())
         VectorMath3D.normalize(forward, forward)
 
@@ -97,7 +97,12 @@ class PerspectiveCamera(
         VectorMath3D.add(target, target, right)
 
         VectorMath3D.scale(up, verDelta, up)
-        VectorMath3D.add(target, target, up)
+        VectorMath3D.add(target, target, up)*/
+        val forward = (target - getPosition()).normalize()
+        val right = (forward cross Vector3D(0f, 1f, 0f)).normalize()
+        val up = (right cross forward).normalize()
+
+        target += right * horDelta + up * verDelta
 
         updateViewMatrix()
         updateViewProjectionMatrix()
@@ -110,10 +115,9 @@ class PerspectiveCamera(
         updateViewProjectionMatrix()
     }
 
-    fun getPosition(): FloatArray {
-        val position = FloatArray(3)
-        VectorMath3D.sphericalToCartesianCoords(position, distance, verticalAngle, horizontalAngle)
-        VectorMath3D.add(position, target, position)
+    fun getPosition(): Vector3D {
+        val position =
+            Vector3D.fromSphericalCoords(distance, verticalAngle, horizontalAngle) + target
         return position
     }
 
