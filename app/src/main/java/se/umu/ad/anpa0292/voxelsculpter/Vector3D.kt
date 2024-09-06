@@ -5,6 +5,10 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
 
+operator fun Float.times(other: Vector3D): Vector3D {
+    return Vector3D(this * other.x, this * other.y, this * other.z)
+}
+
 data class Vector3D(val x: Float, val y: Float, val z: Float) {
     companion object {
         fun fromSphericalCoords(r : Float, theta: Float, phi: Float): Vector3D {

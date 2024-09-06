@@ -10,9 +10,7 @@ import kotlin.math.sqrt
 class EditorSurfaceView(context: Context, attributeSet: AttributeSet) : GLSurfaceView(context, attributeSet) {
     private var renderer: EditorRenderer
 
-    private var prevX = 0f
-    private var prevY = 0f
-
+    private var prevPos = Vector3D(0f, 0f, 0f)
     private var prevDistance = 0f
 
     companion object {
@@ -50,20 +48,13 @@ class EditorSurfaceView(context: Context, attributeSet: AttributeSet) : GLSurfac
     private fun handleDown(event: MotionEvent) {
         when (event.pointerCount) {
             1 -> {
-                prevX = event.x
-                prevY = event.y
+                prevPos = Vector3D(event.x, event.y, 0f)
             }
             2 -> {
-                prevDistance = calculateDistance(event)
-
-                val x1 = event.getX(0)
-                val y1 = event.getY(0)
-                val x2 = event.getX(1)
-                val y2 = event.getY(1)
-
-                // TODO maybe use separate vars
-                prevX = (x1 + x2) / 2
-                prevY = (y1 + y2) / 2
+                val pointer1 = Vector3D(event.getX(0), event.getY(0), 0f)
+                val pointer2 = Vector3D(event.getX(1), event.getY(1), 0f)
+                prevDistance = (pointer1 - pointer2).norm()
+                prevPos = 0.5f * (pointer1 + pointer2)
             }
         }
     }
@@ -76,48 +67,37 @@ class EditorSurfaceView(context: Context, attributeSet: AttributeSet) : GLSurfac
     }
 
     private fun handleSingleDrag(event: MotionEvent) {
-        val dx = event.x - prevX
-        val dy = event.y - prevY
+        val pointer = Vector3D(event.x, event.y, 0f)
+        val dPos = pointer - prevPos
+
         renderer.camera.rotate(
-            -dx * ROTATION_SENSITIVITY,
-            dy * ROTATION_SENSITIVITY
+            -dPos.x * ROTATION_SENSITIVITY,
+            dPos.y * ROTATION_SENSITIVITY
         )
-        prevX = event.x
-        prevY = event.y
+        prevPos = pointer
     }
 
     private fun handlePinchZoom(event: MotionEvent) {
-        val distance = calculateDistance(event)
+        val pointer1 = Vector3D(event.getX(0), event.getY(0), 0f)
+        val pointer2 = Vector3D(event.getX(1), event.getY(1), 0f)
+
+        // Handle zoom
+        val distance = (pointer1 - pointer2).norm()
         val zoomDelta = prevDistance - distance
 
         renderer.camera.zoom(zoomDelta * ZOOM_SENSITIVITY)
         prevDistance = distance
 
-        val x1 = event.getX(0)
-        val y1 = event.getY(0)
-        val x2 = event.getX(1)
-        val y2 = event.getY(1)
+        // Handle pan
+        val middlePoint = 0.5f * (pointer1 + pointer2)
+        val dPos = middlePoint - prevPos
 
-        val x = (x1 + x2) / 2
-        val y = (y1 + y2) / 2
-
-        val dx = x - prevX
-        val dy = y - prevY
         renderer.camera.pan(
-            -dx * PAN_SENSITIVITY,
-            dy * PAN_SENSITIVITY
+            -dPos.x * PAN_SENSITIVITY,
+            dPos.y * PAN_SENSITIVITY
         )
 
         // TODO maybe use separate vars
-        prevX = x
-        prevY = y
-    }
-
-    private fun calculateDistance(event: MotionEvent): Float {
-        val x1 = event.getX(0)
-        val y1 = event.getY(0)
-        val x2 = event.getX(1)
-        val y2 = event.getY(1)
-        return sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1))
+        prevPos = middlePoint
     }
 }
