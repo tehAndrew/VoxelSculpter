@@ -20,6 +20,7 @@ class PerspectiveCamera(
     private val viewMatrix = FloatArray(16)
     private val projectionMatrix = FloatArray(16)
     private val viewProjectionMatrix = FloatArray(16)
+    private val inverseViewProjectionMatrix = FloatArray(16)
 
     init {
         updateViewMatrix()
@@ -56,16 +57,17 @@ class PerspectiveCamera(
             projectionMatrix, 0,
             viewMatrix, 0
         )
+        Matrix.invertM(inverseViewProjectionMatrix, 0, viewProjectionMatrix, 0)
     }
 
     fun rotate(horDelta: Float, verDelta: Float) {
         Matrix.setIdentityM(viewMatrix, 0)
 
         horizontalAngle += horDelta
-        verticalAngle += verDelta
+        if (horizontalAngle >= 360f) horizontalAngle -= 360f
+        if (horizontalAngle < 0f) horizontalAngle += 360f
 
-        if (verticalAngle < -89f) verticalAngle = -89f
-        if (verticalAngle > 89f) verticalAngle = 89f
+        verticalAngle = (verticalAngle + verDelta).coerceIn(-89f, 89f)
 
         updateViewMatrix()
         updateViewProjectionMatrix()
@@ -119,6 +121,35 @@ class PerspectiveCamera(
         val position =
             Vector3D.fromSphericalCoords(distance, verticalAngle, horizontalAngle) + target
         return position
+    }
+
+    fun screenSpaceToModelSpace(ndc: Vector3D) {
+        val nearPoint = floatArrayOf(ndc.x, ndc.y, -1.0f, 1.0f) // Near plane in NDC
+        val farPoint = floatArrayOf(ndc.x, ndc.y, 1.0f, 1.0f) // Far plane in NDC
+
+        val worldNear = FloatArray(4)
+        val worldFar = FloatArray(4)
+
+        // Unproject near point
+        Matrix.multiplyMV(
+            worldNear, 0,
+            inverseViewProjectionMatrix, 0,
+            nearPoint, 0
+        )
+
+        // Unproject far point
+        Matrix.multiplyMV(worldFar, 0,
+            inverseViewProjectionMatrix, 0,
+            farPoint, 0
+        )
+
+        for (i in 0..2) {
+            worldNear[i] /= worldNear[3]
+            worldFar[i] /= worldFar[3]
+        }
+
+        val rayOrigin = Vector3D.fromGLVector(worldNear)
+        val rayDirection = (Vector3D.fromGLVector(worldFar) - rayOrigin).normalize()
     }
 
     fun getTransform(): FloatArray {

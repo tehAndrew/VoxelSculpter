@@ -24,6 +24,10 @@ data class Vector3D(val x: Float, val y: Float, val z: Float) {
                 r * cos(thetaRad) * cos(phiRad)
             )
         }
+
+        fun fromGLVector(vec: FloatArray): Vector3D {
+            return Vector3D(vec[0], vec[1], vec[2])
+        }
     }
 
     operator fun plus(other: Vector3D): Vector3D {

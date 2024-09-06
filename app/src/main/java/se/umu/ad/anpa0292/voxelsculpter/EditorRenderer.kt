@@ -84,7 +84,7 @@ fun linkShaders(vertexShader: Int, fragmentShader: Int): Int {
 
 class EditorRenderer(private val context: Context) : GLSurfaceView.Renderer {
     lateinit var camera: PerspectiveCamera
-    private lateinit var voxel: Voxel
+    private lateinit var voxels: Array<Voxel>
 
     private lateinit var vertexBuffer: FloatBuffer
     private lateinit var solidIndexBuffer: ShortBuffer
@@ -190,8 +190,16 @@ class EditorRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
+
         camera = PerspectiveCamera(Vector3D(0f, 0f, 0f), 100f)
-        voxel = Voxel(0f, 0f, 0f)
+
+        voxels = arrayOf(
+            Voxel(0f, 0f, 0f),
+            Voxel(1f, 0f, 0f),
+            Voxel(-1f, 0f, 0f),
+            Voxel(0f, 1f, 0f)
+        )
+
         setupPrograms()
         setupBuffers()
     }
@@ -247,24 +255,31 @@ class EditorRenderer(private val context: Context) : GLSurfaceView.Renderer {
             0
         )
 
-        GLES20.glUniformMatrix4fv(
-            mMatrixHandle,
-            1,
-            false,
-            voxel.transform,
-            0
-        )
-
         // Bind the index buffer
         GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, ebo[0])
 
-        // Draw the cube
-        GLES20.glDrawElements(
-            GLES20.GL_TRIANGLES,
-            Voxel.solidIndices.size,
-            GLES20.GL_UNSIGNED_SHORT,
-            0
-        )
+        GLES20.glEnable(GLES20.GL_POLYGON_OFFSET_FILL)
+        GLES20.glPolygonOffset(1.0f, 1.0f)
+
+        for (voxel in voxels) {
+            GLES20.glUniformMatrix4fv(
+                mMatrixHandle,
+                1,
+                false,
+                voxel.transform,
+                0
+            )
+
+            // Draw the cube
+            GLES20.glDrawElements(
+                GLES20.GL_TRIANGLES,
+                Voxel.solidIndices.size,
+                GLES20.GL_UNSIGNED_SHORT,
+                0
+            )
+        }
+
+        GLES20.glDisable(GLES20.GL_POLYGON_OFFSET_FILL)
 
         // Unbind buffers and disable vertex attributes
         GLES20.glDisableVertexAttribArray(GLES20.glGetAttribLocation(solidProgram, "vPosition"))
@@ -300,25 +315,33 @@ class EditorRenderer(private val context: Context) : GLSurfaceView.Renderer {
             0
         )
 
-        GLES20.glUniformMatrix4fv(
-            mMatrixHandle,
-            1,
-            false,
-            voxel.transform,
-            0
-        )
-
         // Bind the index buffer
         GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, ebo[1])
 
         // Draw the wireframe
-        GLES20.glLineWidth(2.0f)
-        GLES20.glDrawElements(
-            GLES20.GL_LINES,
-            Voxel.wireframeIndices.size,
-            GLES20.GL_UNSIGNED_SHORT,
-            0
-        )
+        GLES20.glLineWidth(4.0f)
+
+        GLES20.glDepthFunc(GLES20.GL_LEQUAL)
+
+        for (voxel in voxels) {
+            GLES20.glUniformMatrix4fv(
+                mMatrixHandle,
+                1,
+                false,
+                voxel.transform,
+                0
+            )
+
+            // Draw the cube
+            GLES20.glDrawElements(
+                GLES20.GL_LINES,
+                Voxel.wireframeIndices.size,
+                GLES20.GL_UNSIGNED_SHORT,
+                0
+            )
+        }
+
+        GLES20.glDepthFunc(GLES20.GL_LESS)
 
         // Unbind buffers and disable vertex attributes
         GLES20.glDisableVertexAttribArray(positionHandle)

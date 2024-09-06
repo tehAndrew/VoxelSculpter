@@ -4,8 +4,6 @@ import android.content.Context
 import android.opengl.GLSurfaceView
 import android.util.AttributeSet
 import android.view.MotionEvent
-import kotlin.math.abs
-import kotlin.math.sqrt
 
 class EditorSurfaceView(context: Context, attributeSet: AttributeSet) : GLSurfaceView(context, attributeSet) {
     private var renderer: EditorRenderer
@@ -40,6 +38,15 @@ class EditorSurfaceView(context: Context, attributeSet: AttributeSet) : GLSurfac
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> handleDown(event)
             MotionEvent.ACTION_MOVE -> handleMove(event)
+            MotionEvent.ACTION_POINTER_UP -> {
+                if (event.pointerCount == 2) {
+                    // Transition smoothly when lifting one finger
+                    val remainingPointerIndex = if (event.actionIndex == 0) 1 else 0
+                    prevPos = Vector3D(event.getX(remainingPointerIndex), event.getY(remainingPointerIndex), 0f)
+                } else if (event.pointerCount == 1) {
+                    prevPos = Vector3D(event.x, event.y, 0f)
+                }
+            }
         }
 
         return true
@@ -62,7 +69,7 @@ class EditorSurfaceView(context: Context, attributeSet: AttributeSet) : GLSurfac
     private fun handleMove(event: MotionEvent) {
         when (event.pointerCount) {
             1 -> handleSingleDrag(event)
-            2 -> handlePinchZoom(event)
+            2 -> handleTwoFingerTouch(event)
         }
     }
 
@@ -77,7 +84,7 @@ class EditorSurfaceView(context: Context, attributeSet: AttributeSet) : GLSurfac
         prevPos = pointer
     }
 
-    private fun handlePinchZoom(event: MotionEvent) {
+    private fun handleTwoFingerTouch(event: MotionEvent) {
         val pointer1 = Vector3D(event.getX(0), event.getY(0), 0f)
         val pointer2 = Vector3D(event.getX(1), event.getY(1), 0f)
 
@@ -97,7 +104,6 @@ class EditorSurfaceView(context: Context, attributeSet: AttributeSet) : GLSurfac
             dPos.y * PAN_SENSITIVITY
         )
 
-        // TODO maybe use separate vars
         prevPos = middlePoint
     }
 }
