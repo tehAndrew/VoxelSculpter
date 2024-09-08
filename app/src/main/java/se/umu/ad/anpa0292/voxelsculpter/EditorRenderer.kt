@@ -82,10 +82,10 @@ fun linkShaders(vertexShader: Int, fragmentShader: Int): Int {
     }
 }
 
-class EditorRenderer(private val context: Context) : GLSurfaceView.Renderer {
-    lateinit var camera: PerspectiveCamera
-    private lateinit var voxels: Array<Voxel>
-
+class EditorRenderer(
+    private val context: Context,
+    private val world: World
+) : GLSurfaceView.Renderer {
     private lateinit var vertexBuffer: FloatBuffer
     private lateinit var solidIndexBuffer: ShortBuffer
     private lateinit var wireFrameIndexBuffer: ShortBuffer
@@ -191,22 +191,13 @@ class EditorRenderer(private val context: Context) : GLSurfaceView.Renderer {
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
 
-        camera = PerspectiveCamera(Vector3D(0f, 0f, 0f), 100f)
-
-        voxels = arrayOf(
-            Voxel(0f, 0f, 0f),
-            Voxel(1f, 0f, 0f),
-            Voxel(-1f, 0f, 0f),
-            Voxel(0f, 1f, 0f)
-        )
-
         setupPrograms()
         setupBuffers()
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
         GLES20.glViewport(0, 0, width, height)
-        camera.setAspectRatio(width, height)
+        world.camera.setViewport(width, height)
     }
 
     override fun onDrawFrame(gl: GL10?) {
@@ -251,7 +242,7 @@ class EditorRenderer(private val context: Context) : GLSurfaceView.Renderer {
             vpMatrixHandle,
             1,
             false,
-            camera.getTransform(),
+            world.camera.getTransform(),
             0
         )
 
@@ -261,7 +252,7 @@ class EditorRenderer(private val context: Context) : GLSurfaceView.Renderer {
         GLES20.glEnable(GLES20.GL_POLYGON_OFFSET_FILL)
         GLES20.glPolygonOffset(1.0f, 1.0f)
 
-        for (voxel in voxels) {
+        for (voxel in world.voxels) {
             GLES20.glUniformMatrix4fv(
                 mMatrixHandle,
                 1,
@@ -311,7 +302,7 @@ class EditorRenderer(private val context: Context) : GLSurfaceView.Renderer {
             vpMatrixHandle,
             1,
             false,
-            camera.getTransform(),
+            world.camera.getTransform(),
             0
         )
 
@@ -323,23 +314,21 @@ class EditorRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
         GLES20.glDepthFunc(GLES20.GL_LEQUAL)
 
-        for (voxel in voxels) {
-            GLES20.glUniformMatrix4fv(
-                mMatrixHandle,
-                1,
-                false,
-                voxel.transform,
-                0
-            )
+        GLES20.glUniformMatrix4fv(
+            mMatrixHandle,
+            1,
+            false,
+            world.selectedVoxel.transform,
+            0
+        )
 
-            // Draw the cube
-            GLES20.glDrawElements(
-                GLES20.GL_LINES,
-                Voxel.wireframeIndices.size,
-                GLES20.GL_UNSIGNED_SHORT,
-                0
-            )
-        }
+        // Draw the cube
+        GLES20.glDrawElements(
+            GLES20.GL_LINES,
+            Voxel.wireframeIndices.size,
+            GLES20.GL_UNSIGNED_SHORT,
+            0
+        )
 
         GLES20.glDepthFunc(GLES20.GL_LESS)
 

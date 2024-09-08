@@ -5,16 +5,18 @@ import android.util.Log
 
 class PerspectiveCamera(
     private var target: Vector3D,
-    private var distance: Float
+    private var distance: Float,
+    var viewportWidth: Int,
+    var viewportHeight: Int
 ) {
     private var verticalAngle = 0f
     private var horizontalAngle = 0f
 
     // Perspective projection parameters
-    private val fovY = 45f // Field of view in the Y direction
-    private var aspectRatio = 16f / 9f // Aspect ratio (width / height)
+    private val fovY = 45f
     private val near = 1f
     private val far = 200f
+    private var aspectRatio = viewportWidth.toFloat() / viewportHeight.toFloat()
 
     // Transforms
     private val viewMatrix = FloatArray(16)
@@ -44,10 +46,10 @@ class PerspectiveCamera(
     private fun updateProjectionMatrix() {
         Matrix.perspectiveM(
             projectionMatrix, 0,
-            fovY,             // Field of view in Y direction
-            aspectRatio,      // Aspect ratio
-            near,             // Near clipping plane
-            far               // Far clipping plane
+            fovY,
+            aspectRatio,
+            near,
+            far
         )
     }
 
@@ -81,25 +83,6 @@ class PerspectiveCamera(
     }
 
     fun pan(horDelta: Float, verDelta: Float) {
-        // Calculate forward vector
-        /*val forward = FloatArray(3)
-        VectorMath3D.sub(forward, target, getPosition())
-        VectorMath3D.normalize(forward, forward)
-
-        // Calculate right vector
-        val right = FloatArray(3)
-        VectorMath3D.cross(right, forward, floatArrayOf(0f, 1f, 0f))
-        VectorMath3D.normalize(right, right)
-
-        val up = FloatArray(3)
-        VectorMath3D.cross(up, right, forward)
-        VectorMath3D.normalize(up, up)
-
-        VectorMath3D.scale(right, horDelta, right)
-        VectorMath3D.add(target, target, right)
-
-        VectorMath3D.scale(up, verDelta, up)
-        VectorMath3D.add(target, target, up)*/
         val forward = (target - getPosition()).normalize()
         val right = (forward cross Vector3D(0f, 1f, 0f)).normalize()
         val up = (right cross forward).normalize()
@@ -110,22 +93,12 @@ class PerspectiveCamera(
         updateViewProjectionMatrix()
     }
 
-    fun setAspectRatio(width: Int, height: Int) {
-        // Calculate the aspect ratio based on screen dimensions
-        aspectRatio = width.toFloat() / height.toFloat()
-        updateProjectionMatrix()
-        updateViewProjectionMatrix()
-    }
+    fun screenPosToWorldRay(screenPos: Vector3D): Ray {
+        val ndcX = (2f * screenPos.x / viewportWidth) - 1f
+        val ndcY = 1f - (2f * screenPos.y / viewportWidth)
 
-    fun getPosition(): Vector3D {
-        val position =
-            Vector3D.fromSphericalCoords(distance, verticalAngle, horizontalAngle) + target
-        return position
-    }
-
-    fun screenSpaceToModelSpace(ndc: Vector3D) {
-        val nearPoint = floatArrayOf(ndc.x, ndc.y, -1.0f, 1.0f) // Near plane in NDC
-        val farPoint = floatArrayOf(ndc.x, ndc.y, 1.0f, 1.0f) // Far plane in NDC
+        val nearPoint = floatArrayOf(ndcX, ndcY, -1.0f, 1.0f) // Near plane in NDC
+        val farPoint = floatArrayOf(ndcX, ndcY, 1.0f, 1.0f) // Far plane in NDC
 
         val worldNear = FloatArray(4)
         val worldFar = FloatArray(4)
@@ -138,21 +111,44 @@ class PerspectiveCamera(
         )
 
         // Unproject far point
-        Matrix.multiplyMV(worldFar, 0,
+        Matrix.multiplyMV(
+            worldFar, 0,
             inverseViewProjectionMatrix, 0,
             farPoint, 0
         )
 
+        // Normalize world points
         for (i in 0..2) {
             worldNear[i] /= worldNear[3]
             worldFar[i] /= worldFar[3]
         }
 
         val rayOrigin = Vector3D.fromGLVector(worldNear)
-        val rayDirection = (Vector3D.fromGLVector(worldFar) - rayOrigin).normalize()
+        return Ray(
+            rayOrigin,
+            (Vector3D.fromGLVector(worldFar) - rayOrigin).normalize()
+        )
+    }
+
+    fun setViewport(width: Int, height: Int) {
+        viewportWidth = width
+        viewportHeight = height
+        aspectRatio = width.toFloat() / height.toFloat()
+        updateProjectionMatrix()
+        updateViewProjectionMatrix()
+    }
+
+    fun getPosition(): Vector3D {
+        val position =
+            Vector3D.fromSphericalCoords(distance, verticalAngle, horizontalAngle) + target
+        return position
     }
 
     fun getTransform(): FloatArray {
         return viewProjectionMatrix
+    }
+
+    fun getInverseTransform(): FloatArray {
+        return inverseViewProjectionMatrix
     }
 }

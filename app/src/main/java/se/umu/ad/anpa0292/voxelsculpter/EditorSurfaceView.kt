@@ -3,13 +3,26 @@ package se.umu.ad.anpa0292.voxelsculpter
 import android.content.Context
 import android.opengl.GLSurfaceView
 import android.util.AttributeSet
+import android.util.Log
 import android.view.MotionEvent
 
 class EditorSurfaceView(context: Context, attributeSet: AttributeSet) : GLSurfaceView(context, attributeSet) {
     private var renderer: EditorRenderer
 
+    private val world = World(0, 0)
+
     private var prevPos = Vector3D(0f, 0f, 0f)
     private var prevDistance = 0f
+
+    enum class GestureType {
+        NONE,
+        SINGLE_POINTER_CLICK,
+        SINGLE_POINTER_MOVE,
+        TWO_POINTER_GESTURE,
+        MULTI_POINTER_GESTURE
+    }
+
+    private var currentGesture = GestureType.NONE
 
     companion object {
         const val ROTATION_SENSITIVITY = 0.3f
@@ -22,7 +35,7 @@ class EditorSurfaceView(context: Context, attributeSet: AttributeSet) : GLSurfac
         setEGLContextClientVersion(2)
 
         // Set renderer
-        renderer = EditorRenderer(context)
+        renderer = EditorRenderer(context, world)
         setRenderer(renderer)
 
         // Render continuously
@@ -32,7 +45,7 @@ class EditorSurfaceView(context: Context, attributeSet: AttributeSet) : GLSurfac
         preserveEGLContextOnPause = true
     }
 
-    override fun onTouchEvent(event: MotionEvent?): Boolean {
+    /*override fun onTouchEvent(event: MotionEvent?): Boolean {
         event ?: return false
 
         when (event.actionMasked) {
@@ -50,60 +63,110 @@ class EditorSurfaceView(context: Context, attributeSet: AttributeSet) : GLSurfac
         }
 
         return true
-    }
+    }*/
+    override fun onTouchEvent(event: MotionEvent?): Boolean {
+        event ?: return false
 
-    private fun handleDown(event: MotionEvent) {
-        when (event.pointerCount) {
-            1 -> {
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                // Single pointer down
+                currentGesture = GestureType.SINGLE_POINTER_CLICK
                 prevPos = Vector3D(event.x, event.y, 0f)
             }
-            2 -> {
-                val pointer1 = Vector3D(event.getX(0), event.getY(0), 0f)
-                val pointer2 = Vector3D(event.getX(1), event.getY(1), 0f)
-                prevDistance = (pointer1 - pointer2).norm()
-                prevPos = 0.5f * (pointer1 + pointer2)
+
+            MotionEvent.ACTION_POINTER_DOWN -> {
+                // Multi-touch begins
+                val currentPos = if (event.pointerCount > 1) {
+                    val pointer1 = Vector3D(event.getX(0), event.getY(0), 0f)
+                    val pointer2 = Vector3D(event.getX(1), event.getY(1), 0f)
+                    (pointer1 + pointer2) * 0.5f
+                } else Vector3D(event.x, event.y, 0f)
+
+                val currentDistance = if (event.pointerCount > 1) {
+                    val pointer1 = Vector3D(event.getX(0), event.getY(0), 0f)
+                    val pointer2 = Vector3D(event.getX(1), event.getY(1), 0f)
+                    (pointer1 - pointer2).norm()
+                } else 0f
+
+                currentGesture = if (event.pointerCount > 2) {
+                    GestureType.MULTI_POINTER_GESTURE
+                } else {
+                    GestureType.TWO_POINTER_GESTURE
+                }
+
+                prevPos = currentPos
+                prevDistance = currentDistance
+            }
+
+            MotionEvent.ACTION_MOVE -> {
+                val currentPos = if (event.pointerCount > 1) {
+                    val pointer1 = Vector3D(event.getX(0), event.getY(0), 0f)
+                    val pointer2 = Vector3D(event.getX(1), event.getY(1), 0f)
+                    (pointer1 + pointer2) * 0.5f
+                } else Vector3D(event.x, event.y, 0f)
+
+                val currentDistance = if (event.pointerCount > 1) {
+                    val pointer1 = Vector3D(event.getX(0), event.getY(0), 0f)
+                    val pointer2 = Vector3D(event.getX(1), event.getY(1), 0f)
+                    (pointer1 - pointer2).norm()
+                } else 0f
+
+                val delta = currentPos - prevPos
+
+                if (currentGesture == GestureType.SINGLE_POINTER_CLICK && delta.norm() > 1f) {
+                    currentGesture = GestureType.SINGLE_POINTER_MOVE
+                }
+
+                if (currentGesture == GestureType.SINGLE_POINTER_MOVE) {
+                    // Handle rotation
+                    world.camera.rotate(
+                        -delta.x * ROTATION_SENSITIVITY,
+                        delta.y * ROTATION_SENSITIVITY
+                    )
+                } else if (currentGesture == GestureType.TWO_POINTER_GESTURE) {
+                    // Handle panning and zooming
+                    world.camera.pan(
+                        -delta.x * PAN_SENSITIVITY,
+                        delta.y * PAN_SENSITIVITY
+                    )
+                    world.camera.zoom((prevDistance - currentDistance) * ZOOM_SENSITIVITY)
+                }
+
+                prevPos = currentPos
+                prevDistance = currentDistance
+            }
+
+            MotionEvent.ACTION_POINTER_UP -> {
+                // **Check how many pointers remain after one is lifted**
+                if (event.pointerCount == 3) {
+                    // **Transition from MULTI_POINTER_GESTURE to TWO_POINTER_GESTURE when three fingers become two**
+                    currentGesture = GestureType.TWO_POINTER_GESTURE
+
+                    // **Recalculate prevPos and prevDistance based on the remaining two pointers**
+                    val pointer1 = Vector3D(event.getX(0), event.getY(0), 0f)
+                    val pointer2 = Vector3D(event.getX(1), event.getY(1), 0f)
+                    prevPos = (pointer1 + pointer2) * 0.5f
+                    prevDistance = (pointer1 - pointer2).norm()
+
+                } else if (event.pointerCount == 2) {
+                    // **Transition to SINGLE_POINTER_MOVE when only one pointer remains**
+                    currentGesture = GestureType.SINGLE_POINTER_MOVE
+
+                    // **Recalibrate the position of the remaining finger to avoid unintended pan or zoom**
+                    val remainingPointerIndex = if (event.actionIndex == 0) 1 else 0
+                    prevPos = Vector3D(event.getX(remainingPointerIndex), event.getY(remainingPointerIndex), 0f)
+
+                    // **Reset prevDistance to avoid zooming after switching to single pointer**
+                    prevDistance = 0f
+                }
+            }
+
+            MotionEvent.ACTION_UP -> {
+                // End of gesture
+                currentGesture = GestureType.NONE
             }
         }
-    }
 
-    private fun handleMove(event: MotionEvent) {
-        when (event.pointerCount) {
-            1 -> handleSingleDrag(event)
-            2 -> handleTwoFingerTouch(event)
-        }
-    }
-
-    private fun handleSingleDrag(event: MotionEvent) {
-        val pointer = Vector3D(event.x, event.y, 0f)
-        val dPos = pointer - prevPos
-
-        renderer.camera.rotate(
-            -dPos.x * ROTATION_SENSITIVITY,
-            dPos.y * ROTATION_SENSITIVITY
-        )
-        prevPos = pointer
-    }
-
-    private fun handleTwoFingerTouch(event: MotionEvent) {
-        val pointer1 = Vector3D(event.getX(0), event.getY(0), 0f)
-        val pointer2 = Vector3D(event.getX(1), event.getY(1), 0f)
-
-        // Handle zoom
-        val distance = (pointer1 - pointer2).norm()
-        val zoomDelta = prevDistance - distance
-
-        renderer.camera.zoom(zoomDelta * ZOOM_SENSITIVITY)
-        prevDistance = distance
-
-        // Handle pan
-        val middlePoint = 0.5f * (pointer1 + pointer2)
-        val dPos = middlePoint - prevPos
-
-        renderer.camera.pan(
-            -dPos.x * PAN_SENSITIVITY,
-            dPos.y * PAN_SENSITIVITY
-        )
-
-        prevPos = middlePoint
+        return true
     }
 }

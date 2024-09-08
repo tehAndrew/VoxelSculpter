@@ -2,47 +2,49 @@ package se.umu.ad.anpa0292.voxelsculpter
 
 import android.opengl.Matrix
 
-class Voxel(x: Float, y: Float, z: Float) {
+class Voxel(val pos: Vector3D) {
     val transform = FloatArray(16);
     val color = floatArrayOf(1.0f, 0.5f, 0.0f, 1.0f)
 
     companion object {
+        const val HALF_SIDE = 0.5f
+
         val vertices = floatArrayOf(
             // Front face
-            -0.5f, -0.5f, 0.5f,
-            0.5f, -0.5f, 0.5f,
-            0.5f, 0.5f, 0.5f,
-            -0.5f, 0.5f, 0.5f,
+            -HALF_SIDE, -HALF_SIDE, HALF_SIDE,
+            HALF_SIDE, -HALF_SIDE, HALF_SIDE,
+            HALF_SIDE, HALF_SIDE, HALF_SIDE,
+            -HALF_SIDE, HALF_SIDE, HALF_SIDE,
 
             // Back face
-            -0.5f, -0.5f, -0.5f,
-            0.5f, -0.5f, -0.5f,
-            0.5f, 0.5f, -0.5f,
-            -0.5f, 0.5f, -0.5f,
+            -HALF_SIDE, -HALF_SIDE, -HALF_SIDE,
+            HALF_SIDE, -HALF_SIDE, -HALF_SIDE,
+            HALF_SIDE, HALF_SIDE, -HALF_SIDE,
+            -HALF_SIDE, HALF_SIDE, -HALF_SIDE,
 
             // Left face
-            -0.5f, 0.5f, 0.5f,
-            -0.5f, 0.5f, -0.5f,
-            -0.5f, -0.5f, -0.5f,
-            -0.5f, -0.5f,  0.5f,
+            -HALF_SIDE, HALF_SIDE, HALF_SIDE,
+            -HALF_SIDE, HALF_SIDE, -HALF_SIDE,
+            -HALF_SIDE, -HALF_SIDE, -HALF_SIDE,
+            -HALF_SIDE, -HALF_SIDE, HALF_SIDE,
 
             // Right face
-            0.5f, 0.5f, 0.5f,
-            0.5f, 0.5f, -0.5f,
-            0.5f, -0.5f, -0.5f,
-            0.5f, -0.5f,  0.5f,
+            HALF_SIDE, HALF_SIDE, HALF_SIDE,
+            HALF_SIDE, HALF_SIDE, -HALF_SIDE,
+            HALF_SIDE, -HALF_SIDE, -HALF_SIDE,
+            HALF_SIDE, -HALF_SIDE, HALF_SIDE,
 
             // Top face
-            -0.5f, 0.5f, 0.5f,
-            0.5f, 0.5f, 0.5f,
-            0.5f, 0.5f, -0.5f,
-            -0.5f, 0.5f, -0.5f,
+            -HALF_SIDE, HALF_SIDE, HALF_SIDE,
+            HALF_SIDE, HALF_SIDE, HALF_SIDE,
+            HALF_SIDE, HALF_SIDE, -HALF_SIDE,
+            -HALF_SIDE, HALF_SIDE, -HALF_SIDE,
 
             // Bottom face
-            -0.5f, -0.5f, 0.5f,
-            0.5f, -0.5f, 0.5f,
-            0.5f, -0.5f, -0.5f,
-            -0.5f, -0.5f, -0.5f
+            -HALF_SIDE, -HALF_SIDE, HALF_SIDE,
+            HALF_SIDE, -HALF_SIDE, HALF_SIDE,
+            HALF_SIDE, -HALF_SIDE, -HALF_SIDE,
+            -HALF_SIDE, -HALF_SIDE, -HALF_SIDE
         )
 
         val normals = floatArrayOf(
@@ -117,6 +119,6 @@ class Voxel(x: Float, y: Float, z: Float) {
 
     init {
         Matrix.setIdentityM(transform, 0)
-        Matrix.translateM(transform, 0, x, y, z)
+        Matrix.translateM(transform, 0, pos.x, pos.y, pos.z)
     }
 }

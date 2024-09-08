@@ -30,6 +30,15 @@ data class Vector3D(val x: Float, val y: Float, val z: Float) {
         }
     }
 
+    operator fun get(index: Int): Float {
+        return when (index) {
+            0 -> x
+            1 -> y
+            2 -> z
+            else -> throw IndexOutOfBoundsException("Index out of range: $index")
+        }
+    }
+
     operator fun plus(other: Vector3D): Vector3D {
         return Vector3D(x + other.x, y + other.y, z + other.z)
     }
