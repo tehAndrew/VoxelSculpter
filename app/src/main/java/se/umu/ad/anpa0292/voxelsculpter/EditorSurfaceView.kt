@@ -110,6 +110,7 @@ class EditorSurfaceView(context: Context, attributeSet: AttributeSet) : GLSurfac
                         -delta.x * PAN_SENSITIVITY,
                         delta.y * PAN_SENSITIVITY
                     )
+                    world.selectVoxelAtCenter()
                     world.camera.zoom((prevDistance - currentDistance) * ZOOM_SENSITIVITY)
                 }
 
@@ -118,26 +119,22 @@ class EditorSurfaceView(context: Context, attributeSet: AttributeSet) : GLSurfac
             }
 
             MotionEvent.ACTION_POINTER_UP -> {
-                // **Check how many pointers remain after one is lifted**
                 if (event.pointerCount == 3) {
-                    // **Transition from MULTI_POINTER_GESTURE to TWO_POINTER_GESTURE when three fingers become two**
                     currentGesture = GestureType.TWO_POINTER_GESTURE
 
-                    // **Recalculate prevPos and prevDistance based on the remaining two pointers**
                     val pointer1 = Vector3D(event.getX(0), event.getY(0), 0f)
                     val pointer2 = Vector3D(event.getX(1), event.getY(1), 0f)
                     prevPos = (pointer1 + pointer2) * 0.5f
                     prevDistance = (pointer1 - pointer2).norm()
 
                 } else if (event.pointerCount == 2) {
-                    // **Transition to SINGLE_POINTER_MOVE when only one pointer remains**
                     currentGesture = GestureType.SINGLE_POINTER_MOVE
 
-                    // **Recalibrate the position of the remaining finger to avoid unintended pan or zoom**
+                    world.centerCamera() // Move from pan to single touch will center camera
+                                         // around selected voxel
+
                     val remainingPointerIndex = if (event.actionIndex == 0) 1 else 0
                     prevPos = Vector3D(event.getX(remainingPointerIndex), event.getY(remainingPointerIndex), 0f)
-
-                    // **Reset prevDistance to avoid zooming after switching to single pointer**
                     prevDistance = 0f
                 }
             }
@@ -145,7 +142,7 @@ class EditorSurfaceView(context: Context, attributeSet: AttributeSet) : GLSurfac
             MotionEvent.ACTION_UP -> {
                 // End of gesture
                 if (currentGesture == GestureType.SINGLE_POINTER_CLICK) {
-                    world.selectVoxelAtScreenPos(Vector3D(event.x, event.y, 0f))
+                    1 + 1 // Implement build / destroy blocks
                 }
                 currentGesture = GestureType.NONE
             }

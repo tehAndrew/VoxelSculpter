@@ -8,7 +8,7 @@ data class Ray(val origin: Vector3D, val direction: Vector3D) {
     val invDirection = Vector3D(1 / direction.x, 1 / direction.y, 1 / direction.z)
 }
 data class AABB(val min: Vector3D, val max: Vector3D)
-class World(viewportWidth: Int, viewportHeight: Int) {
+class World(private var viewportWidth: Int, private var viewportHeight: Int) {
     val camera: PerspectiveCamera = PerspectiveCamera(
         Vector3D(0f, 0f, 0f),
         60f,
@@ -23,8 +23,17 @@ class World(viewportWidth: Int, viewportHeight: Int) {
     )
     var selectedVoxel = voxels[1]
 
-    fun selectVoxelAtScreenPos(screenPos: Vector3D) {
-        val ray = camera.screenPosToWorldRay(screenPos)
+    // Updated by open gl in renderer. Spaghetti intensifies
+    fun setViewport(viewportWidth: Int, viewportHeight: Int) {
+        this.viewportWidth = viewportWidth
+        this.viewportHeight = viewportHeight
+        camera.setViewport(viewportWidth, viewportHeight)
+    }
+
+    fun selectVoxelAtCenter() {
+        val ray = camera.screenPosToWorldRay(
+            Vector3D(viewportWidth / 2f, viewportHeight / 2f, 0f)
+        )
         val tVals = mutableListOf<Pair<Float, Voxel>>()
         for (voxel in voxels) {
             val aabb = calculateVoxelAABB(voxel)
@@ -37,8 +46,11 @@ class World(viewportWidth: Int, viewportHeight: Int) {
         if (tVals.isNotEmpty()) {
             val (value, voxel) = tVals.minBy { it.first }
             selectedVoxel = voxel
-            camera.setTarget(voxel.pos)
         }
+    }
+
+    fun centerCamera() {
+        camera.setTarget(selectedVoxel.pos)
     }
 
     // Uses the fast branchless check here: https://tavianator.com/2015/ray_box_nan.html
