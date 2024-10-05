@@ -1,5 +1,6 @@
 package se.umu.ad.anpa0292.voxelsculpter
 
+import android.util.Log
 import kotlin.math.max
 import kotlin.math.min
 
@@ -19,16 +20,15 @@ class World(viewportWidth: Int, viewportHeight: Int) {
         Voxel(Vector3D(-1f, 0f, 0f)),
         Voxel(Vector3D(0f, -1f, 0f)),
         Voxel(Vector3D(0f, 1f, 0f)),
-        Voxel(Vector3D(0f, 0f, -1f)),
-        Voxel(Vector3D(0f, 0f, 1f))
     )
-    var selectedVoxel = voxels[0]
+    var selectedVoxel = voxels[1]
 
-    fun getVoxelAtScreenPos(screenPos: Vector3D) {
+    fun selectVoxelAtScreenPos(screenPos: Vector3D) {
         val ray = camera.screenPosToWorldRay(screenPos)
         val tVals = mutableListOf<Pair<Float, Voxel>>()
         for (voxel in voxels) {
             val aabb = calculateVoxelAABB(voxel)
+            Log.d("selectVoxelAtScreenPos", ray.origin.toString());
             intersectRayAABB(ray, aabb)?.let {
                 tVals.add(it to voxel)
             }
@@ -37,6 +37,7 @@ class World(viewportWidth: Int, viewportHeight: Int) {
         if (tVals.isNotEmpty()) {
             val (value, voxel) = tVals.minBy { it.first }
             selectedVoxel = voxel
+            camera.setTarget(voxel.pos)
         }
     }
 
@@ -50,7 +51,7 @@ class World(viewportWidth: Int, viewportHeight: Int) {
             val t2 = (aabb.max[i] - ray.origin[i]) * ray.invDirection[i]
 
             tmin = max(tmin, min(t1, t2))
-            tmax = min(tmin, max(t1, t2))
+            tmax = min(tmax, max(t1, t2))
         }
 
         val isIntersecting = tmax > maxOf(tmin, 0f)

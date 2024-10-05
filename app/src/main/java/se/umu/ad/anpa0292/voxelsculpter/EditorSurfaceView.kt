@@ -45,25 +45,6 @@ class EditorSurfaceView(context: Context, attributeSet: AttributeSet) : GLSurfac
         preserveEGLContextOnPause = true
     }
 
-    /*override fun onTouchEvent(event: MotionEvent?): Boolean {
-        event ?: return false
-
-        when (event.actionMasked) {
-            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> handleDown(event)
-            MotionEvent.ACTION_MOVE -> handleMove(event)
-            MotionEvent.ACTION_POINTER_UP -> {
-                if (event.pointerCount == 2) {
-                    // Transition smoothly when lifting one finger
-                    val remainingPointerIndex = if (event.actionIndex == 0) 1 else 0
-                    prevPos = Vector3D(event.getX(remainingPointerIndex), event.getY(remainingPointerIndex), 0f)
-                } else if (event.pointerCount == 1) {
-                    prevPos = Vector3D(event.x, event.y, 0f)
-                }
-            }
-        }
-
-        return true
-    }*/
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         event ?: return false
 
@@ -163,6 +144,9 @@ class EditorSurfaceView(context: Context, attributeSet: AttributeSet) : GLSurfac
 
             MotionEvent.ACTION_UP -> {
                 // End of gesture
+                if (currentGesture == GestureType.SINGLE_POINTER_CLICK) {
+                    world.selectVoxelAtScreenPos(Vector3D(event.x, event.y, 0f))
+                }
                 currentGesture = GestureType.NONE
             }
         }

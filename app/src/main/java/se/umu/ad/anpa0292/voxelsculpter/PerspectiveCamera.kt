@@ -62,6 +62,13 @@ class PerspectiveCamera(
         Matrix.invertM(inverseViewProjectionMatrix, 0, viewProjectionMatrix, 0)
     }
 
+    fun setTarget(newtarget: Vector3D) {
+        // TODO: Tween
+        target = newtarget
+        updateViewMatrix()
+        updateViewProjectionMatrix()
+    }
+
     fun rotate(horDelta: Float, verDelta: Float) {
         Matrix.setIdentityM(viewMatrix, 0)
 
@@ -95,7 +102,7 @@ class PerspectiveCamera(
 
     fun screenPosToWorldRay(screenPos: Vector3D): Ray {
         val ndcX = (2f * screenPos.x / viewportWidth) - 1f
-        val ndcY = 1f - (2f * screenPos.y / viewportWidth)
+        val ndcY = 1f - (2f * screenPos.y / viewportHeight)
 
         val nearPoint = floatArrayOf(ndcX, ndcY, -1.0f, 1.0f) // Near plane in NDC
         val farPoint = floatArrayOf(ndcX, ndcY, 1.0f, 1.0f) // Far plane in NDC
