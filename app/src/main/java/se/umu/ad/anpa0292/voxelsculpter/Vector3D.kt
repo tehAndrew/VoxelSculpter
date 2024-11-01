@@ -1,5 +1,7 @@
 package se.umu.ad.anpa0292.voxelsculpter
 
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -9,7 +11,8 @@ operator fun Float.times(other: Vector3D): Vector3D {
     return Vector3D(this * other.x, this * other.y, this * other.z)
 }
 
-data class Vector3D(val x: Float, val y: Float, val z: Float) {
+@Parcelize
+data class Vector3D(val x: Float, val y: Float, val z: Float): Parcelable {
     companion object {
         fun fromSphericalCoords(r : Float, theta: Float, phi: Float): Vector3D {
             require(r >= 0) {"r must be non-negative."}

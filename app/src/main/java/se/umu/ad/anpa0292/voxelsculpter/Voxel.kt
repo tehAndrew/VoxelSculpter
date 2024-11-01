@@ -1,8 +1,11 @@
 package se.umu.ad.anpa0292.voxelsculpter
 
 import android.opengl.Matrix
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
 
-class Voxel(val pos: Vector3D) {
+@Parcelize
+class Voxel(val pos: Vector3D): Parcelable {
     val transform = FloatArray(16);
     val color = floatArrayOf(1.0f, 0.5f, 0.0f, 1.0f)
 

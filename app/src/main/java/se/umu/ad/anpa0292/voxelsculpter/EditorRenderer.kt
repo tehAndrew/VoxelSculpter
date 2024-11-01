@@ -197,7 +197,7 @@ class EditorRenderer(
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
         GLES20.glViewport(0, 0, width, height)
-        world.setViewport(width, height)
+        world.camera.setViewport(width, height)
     }
 
     override fun onDrawFrame(gl: GL10?) {

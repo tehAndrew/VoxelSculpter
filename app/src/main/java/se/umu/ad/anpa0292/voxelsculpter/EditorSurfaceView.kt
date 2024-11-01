@@ -9,7 +9,7 @@ import android.view.MotionEvent
 class EditorSurfaceView(context: Context, attributeSet: AttributeSet) : GLSurfaceView(context, attributeSet) {
     private var renderer: EditorRenderer
 
-    private val world = World(0, 0)
+    private val world = World()
 
     private var prevPos = Vector3D(0f, 0f, 0f)
     private var prevDistance = 0f
@@ -142,7 +142,7 @@ class EditorSurfaceView(context: Context, attributeSet: AttributeSet) : GLSurfac
             MotionEvent.ACTION_UP -> {
                 // End of gesture
                 if (currentGesture == GestureType.SINGLE_POINTER_CLICK) {
-                    1 + 1 // Implement build / destroy blocks
+                    world.addVoxelAtScreenPos(Vector3D(event.x, event.y, 0f))
                 }
                 currentGesture = GestureType.NONE
             }

@@ -2,21 +2,25 @@ package se.umu.ad.anpa0292.voxelsculpter
 
 import android.opengl.Matrix
 import android.util.Log
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
 
+@Parcelize
 class PerspectiveCamera(
     private var target: Vector3D,
     private var distance: Float,
-    var viewportWidth: Int,
-    var viewportHeight: Int
-) {
-    private var verticalAngle = 0f
-    private var horizontalAngle = 0f
-
+    private var verticalAngle: Float,
+    private var horizontalAngle: Float
+): Parcelable {
     // Perspective projection parameters
     private val fovY = 45f
     private val near = 1f
     private val far = 200f
-    private var aspectRatio = viewportWidth.toFloat() / viewportHeight.toFloat()
+
+    // Will be set by the renderer
+    private var aspectRatio = 0.0f
+    private var viewportWidth = 0
+    private var viewportHeight = 0
 
     // Transforms
     private val viewMatrix = FloatArray(16)
@@ -143,6 +147,10 @@ class PerspectiveCamera(
         aspectRatio = width.toFloat() / height.toFloat()
         updateProjectionMatrix()
         updateViewProjectionMatrix()
+    }
+
+    fun getViewport(): Pair<Int, Int> {
+        return viewportWidth to viewportHeight
     }
 
     fun getPosition(): Vector3D {

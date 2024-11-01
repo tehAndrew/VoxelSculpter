@@ -8,66 +8,113 @@ data class Ray(val origin: Vector3D, val direction: Vector3D) {
     val invDirection = Vector3D(1 / direction.x, 1 / direction.y, 1 / direction.z)
 }
 data class AABB(val min: Vector3D, val max: Vector3D)
-class World(private var viewportWidth: Int, private var viewportHeight: Int) {
+
+data class IntersectionRes(val voxel: Voxel, val t: Float, val normal: Vector3D);
+
+// TODO world should not need viewport
+class World() {
     val camera: PerspectiveCamera = PerspectiveCamera(
         Vector3D(0f, 0f, 0f),
         60f,
-        viewportWidth, viewportHeight
+        0f, 0f
     )
-    val voxels = arrayOf(
-        Voxel(Vector3D(0f, 0f, 0f)),
-        Voxel(Vector3D(1f, 0f, 0f)),
-        Voxel(Vector3D(-1f, 0f, 0f)),
-        Voxel(Vector3D(0f, -1f, 0f)),
-        Voxel(Vector3D(0f, 1f, 0f)),
-    )
-    var selectedVoxel = voxels[1]
 
-    // Updated by open gl in renderer. Spaghetti intensifies
-    fun setViewport(viewportWidth: Int, viewportHeight: Int) {
-        this.viewportWidth = viewportWidth
-        this.viewportHeight = viewportHeight
-        camera.setViewport(viewportWidth, viewportHeight)
+    val voxels = mutableListOf(
+        Voxel(Vector3D(0f, 0f, 0f))
+    )
+    var selectedVoxel = voxels[0]
+
+    private fun addVoxel(voxel: Voxel) {
+        voxels.add(voxel)
+    }
+
+    private fun removeVoxel(voxel: Voxel) {
+        voxels.remove(voxel)
     }
 
     fun selectVoxelAtCenter() {
-        val ray = camera.screenPosToWorldRay(
+        val (viewportWidth, viewportHeight) = camera.getViewport()
+        val result = getVoxelAtScreenPos(
             Vector3D(viewportWidth / 2f, viewportHeight / 2f, 0f)
         )
-        val tVals = mutableListOf<Pair<Float, Voxel>>()
+
+        result?.let { (voxel, _, _) -> selectedVoxel = voxel }
+    }
+
+    fun addVoxelAtScreenPos(screenPos: Vector3D) {
+        val result = getVoxelAtScreenPos(screenPos)
+        result?.let { (voxel, _, normal) ->
+            val newVoxel = Voxel(voxel.pos + normal)
+            addVoxel(newVoxel)
+        }
+    }
+
+    fun removeVoxelAtScreenPos(screenPos: Vector3D) {
+        val result = getVoxelAtScreenPos(screenPos)
+        result?.let { (voxel, _, _) ->
+            if (voxel == selectedVoxel) {
+                removeVoxel(voxel)
+                selectedVoxel = getClosestVoxel(voxel.pos)
+            }
+        }
+    }
+
+    fun getClosestVoxel(pos: Vector3D): Voxel {
+        return voxels.minBy { (pos - it.pos).norm() }
+    }
+
+    fun getVoxelAtScreenPos(screenPos: Vector3D): IntersectionRes? {
+        val ray = camera.screenPosToWorldRay(screenPos)
+        val intersectionResList = mutableListOf<IntersectionRes>()
         for (voxel in voxels) {
             val aabb = calculateVoxelAABB(voxel)
-            Log.d("selectVoxelAtScreenPos", ray.origin.toString());
             intersectRayAABB(ray, aabb)?.let {
-                tVals.add(it to voxel)
+                val (t, normal) = it
+                intersectionResList.add(
+                    IntersectionRes(voxel, t, normal)
+                )
             }
         }
 
-        if (tVals.isNotEmpty()) {
-            val (value, voxel) = tVals.minBy { it.first }
-            selectedVoxel = voxel
-        }
+        return if (intersectionResList.isNotEmpty()) intersectionResList.minBy { it.t } else null
     }
 
     fun centerCamera() {
         camera.setTarget(selectedVoxel.pos)
     }
 
-    // Uses the fast branchless check here: https://tavianator.com/2015/ray_box_nan.html
-    private fun intersectRayAABB(ray: Ray, aabb: AABB): Float? {
+    private fun intersectRayAABB(ray: Ray, aabb: AABB): Pair<Float, Vector3D>? {
         var tmin = Float.NEGATIVE_INFINITY
         var tmax = Float.POSITIVE_INFINITY
+        var normal: Vector3D? = null
 
-        for (i in 0 until 3)  {
+        for (i in 0 until 3) {
             val t1 = (aabb.min[i] - ray.origin[i]) * ray.invDirection[i]
             val t2 = (aabb.max[i] - ray.origin[i]) * ray.invDirection[i]
 
-            tmin = max(tmin, min(t1, t2))
-            tmax = min(tmax, max(t1, t2))
+            val (near, far) = if (t1 < t2) t1 to t2 else t2 to t1
+
+            if (near > tmin) {
+                tmin = near
+                // Update normal for the near side
+                normal = when (i) {
+                    0 -> if (t1 < t2) Vector3D(-1f, 0f, 0f) else Vector3D(1f, 0f, 0f) // X axis
+                    1 -> if (t1 < t2) Vector3D(0f, -1f, 0f) else Vector3D(0f, 1f, 0f) // Y axis
+                    2 -> if (t1 < t2) Vector3D(0f, 0f, -1f) else Vector3D(0f, 0f, 1f) // Z axis
+                    else -> null
+                }
+            }
+
+            if (far < tmax) {
+                tmax = far
+            }
+
+            if (tmin > tmax || tmax < 0) {
+                return null // No intersection
+            }
         }
 
-        val isIntersecting = tmax > maxOf(tmin, 0f)
-        return if (isIntersecting) tmin else null
+        return Pair(tmin, normal!!)
     }
 
     private fun calculateVoxelAABB(voxel: Voxel): AABB {
