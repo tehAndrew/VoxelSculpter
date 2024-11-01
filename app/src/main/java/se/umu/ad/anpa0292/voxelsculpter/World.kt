@@ -1,6 +1,7 @@
 package se.umu.ad.anpa0292.voxelsculpter
 
 import android.util.Log
+import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.math.max
 import kotlin.math.min
 
@@ -19,9 +20,7 @@ class World() {
         0f, 0f
     )
 
-    val voxels = mutableListOf(
-        Voxel(Vector3D(0f, 0f, 0f))
-    )
+    val voxels = CopyOnWriteArrayList<Voxel>(listOf(Voxel(Vector3D(0.0f, 0.0f, 0.0f))))
     var selectedVoxel = voxels[0]
 
     private fun addVoxel(voxel: Voxel) {
@@ -52,8 +51,10 @@ class World() {
     fun removeVoxelAtScreenPos(screenPos: Vector3D) {
         val result = getVoxelAtScreenPos(screenPos)
         result?.let { (voxel, _, _) ->
+            if (voxels.size == 1) return@let
+
+            removeVoxel(voxel)
             if (voxel == selectedVoxel) {
-                removeVoxel(voxel)
                 selectedVoxel = getClosestVoxel(voxel.pos)
             }
         }
