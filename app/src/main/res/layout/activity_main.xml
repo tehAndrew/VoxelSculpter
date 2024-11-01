@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
@@ -7,7 +8,7 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <!-- App Bar (Toolbar) -->
+    <!-- Top Toolbar -->
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="56dp"
@@ -24,21 +25,55 @@
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <!-- Content (EditorSurfaceView) -->
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <!-- Content Layout with EditorSurfaceView and Overlay Buttons -->
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
+        <!-- GL View -->
         <se.umu.ad.anpa0292.voxelsculpter.EditorSurfaceView
             android:id="@+id/editor_surface_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <!-- Overlayed Icon Buttons -->
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:layout_gravity="bottom|end"
+            android:orientation="horizontal"
+            android:layout_margin="16dp">
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+            <ImageButton
+                android:id="@+id/add_button"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:background="?attr/selectableItemBackground"
+                android:src="@drawable/ic_add"
+                android:contentDescription=""
+                android:scaleType="fitCenter" />
+
+            <ImageButton
+                android:id="@+id/remove_button"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:background="?attr/selectableItemBackground"
+                android:src="@drawable/ic_remove"
+                android:contentDescription=""
+                android:scaleType="fitCenter" />
+
+            <ImageButton
+                android:id="@+id/paint_button"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:background="?attr/selectableItemBackground"
+                android:src="@drawable/ic_paint"
+                android:contentDescription=""
+                android:scaleType="fitCenter" />
+
+        </LinearLayout>
+
+    </FrameLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

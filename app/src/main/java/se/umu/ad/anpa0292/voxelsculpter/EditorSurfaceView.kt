@@ -14,6 +14,8 @@ class EditorSurfaceView(context: Context, attributeSet: AttributeSet) : GLSurfac
     private var prevPos = Vector3D(0f, 0f, 0f)
     private var prevDistance = 0f
 
+    var currentTool = Tool.ADD
+
     enum class GestureType {
         NONE,
         SINGLE_POINTER_CLICK,
@@ -142,7 +144,7 @@ class EditorSurfaceView(context: Context, attributeSet: AttributeSet) : GLSurfac
             MotionEvent.ACTION_UP -> {
                 // End of gesture
                 if (currentGesture == GestureType.SINGLE_POINTER_CLICK) {
-                    world.addVoxelAtScreenPos(Vector3D(event.x, event.y, 0f))
+                    currentTool.use(world, Vector3D(event.x, event.y, 0f))
                 }
                 currentGesture = GestureType.NONE
             }

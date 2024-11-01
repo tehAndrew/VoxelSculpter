@@ -12,7 +12,6 @@ data class AABB(val min: Vector3D, val max: Vector3D)
 
 data class IntersectionRes(val voxel: Voxel, val t: Float, val normal: Vector3D);
 
-// TODO world should not need viewport
 class World() {
     val camera: PerspectiveCamera = PerspectiveCamera(
         Vector3D(0f, 0f, 0f),
