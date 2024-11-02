@@ -90,17 +90,36 @@ class EditorRenderer(
     private lateinit var solidIndexBuffer: ShortBuffer
     private lateinit var wireFrameIndexBuffer: ShortBuffer
     private lateinit var normalBuffer: FloatBuffer
+    private lateinit var quadVertexBuffer: FloatBuffer
 
-    private var solidVertexShader: Int = 0
-    private var solidFragmentShader: Int = 0
-    private var wireFrameVertexShader: Int = 0
-    private var wireFrameFragmentShader: Int = 0
+    private var solidVertexShader = 0
+    private var solidFragmentShader = 0
+    private var wireFrameVertexShader = 0
+    private var wireFrameFragmentShader = 0
+    private var postVertexShader = 0
+    private var postFragmentShader = 0
 
-    private var solidProgram: Int = 0
-    private var wireFrameProgram: Int = 0
+    private var solidProgram = 0
+    private var wireFrameProgram = 0
+    private var postProgram = 0
 
-    private val vbo = IntArray(2)
+    private val quadVertices = floatArrayOf(
+        -1f, -1f,
+        1f, -1f,
+        -1f,  1f,
+        1f,  1f
+    )
+    private var screenTex = 0
+
+    /* Vertex buffer objects. One for vertices, one for normals as well as one additional for the
+       screen quad */
+    private val vbo = IntArray(3)
+    /* Element buffer objects. One for the indices of rendering a voxel and one for the indices
+       of rendering a voxel wireframe. */
     private val ebo = IntArray(2)
+    private var fbo = 0
+
+
 
     private fun setupPrograms() {
         val solidVertCode = loadShaderSourceCode(context, R.raw.solid_vert)
@@ -118,10 +137,18 @@ class EditorRenderer(
         wireFrameFragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, wireFrameFragCode)
 
         wireFrameProgram = linkShaders(wireFrameVertexShader, wireFrameFragmentShader)
+
+        val postVertCode = loadShaderSourceCode(context, R.raw.post_vert)
+        postVertexShader = loadShader(GLES20.GL_VERTEX_SHADER, postVertCode)
+
+        val postFragCode = loadShaderSourceCode(context, R.raw.post_frag)
+        postFragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, postFragCode)
+
+        postProgram = linkShaders(postVertexShader, postFragmentShader)
     }
 
     private fun setupBuffers() {
-        GLES20.glGenBuffers(2, vbo, 0)
+        GLES20.glGenBuffers(3, vbo, 0)
         GLES20.glGenBuffers(2, ebo, 0)
 
         vertexBuffer = ByteBuffer.allocateDirect(Voxel.vertices.size * 4)
@@ -137,6 +164,14 @@ class EditorRenderer(
             .asFloatBuffer()
             .apply {
                 put(Voxel.normals)
+                position(0)
+            }
+
+        quadVertexBuffer = ByteBuffer.allocateDirect(quadVertices.size * 4)
+            .order(ByteOrder.nativeOrder())
+            .asFloatBuffer()
+            .apply {
+                put(quadVertices)
                 position(0)
             }
 
@@ -172,6 +207,14 @@ class EditorRenderer(
             GLES20.GL_STATIC_DRAW
         )
 
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, vbo[2])
+        GLES20.glBufferData(
+            GLES20.GL_ARRAY_BUFFER,
+            quadVertices.size * 4,
+            quadVertexBuffer,
+            GLES20.GL_STATIC_DRAW
+        )
+
         GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, ebo[0])
         GLES20.glBufferData(
             GLES20.GL_ELEMENT_ARRAY_BUFFER,
@@ -188,6 +231,42 @@ class EditorRenderer(
             GLES20.GL_STATIC_DRAW)
     }
 
+    private fun configFrameBuffer(width: Int, height: Int) {
+        val framebuffer = IntArray(1)
+        GLES20.glGenFramebuffers(1, framebuffer, 0)
+        fbo = framebuffer[0]
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, fbo)
+
+        val tempTex = IntArray(1)
+        GLES20.glGenTextures(1, tempTex, 0)
+        screenTex = tempTex[0]
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, screenTex)
+
+        GLES20.glTexImage2D(
+            GLES20.GL_TEXTURE_2D,
+            0,
+            GLES20.GL_RGBA,
+            width, height,
+            0,
+            GLES20.GL_RGBA,
+            GLES20.GL_UNSIGNED_BYTE,
+            null
+        )
+
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR)
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
+
+        GLES20.glFramebufferTexture2D(
+            GLES20.GL_FRAMEBUFFER,
+            GLES20.GL_COLOR_ATTACHMENT0,
+            GLES20.GL_TEXTURE_2D,
+            screenTex,
+            0
+        )
+
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
+    }
+
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
 
@@ -197,15 +276,22 @@ class EditorRenderer(
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
         GLES20.glViewport(0, 0, width, height)
+        configFrameBuffer(width, height)
         world.camera.setViewport(width, height)
     }
 
     override fun onDrawFrame(gl: GL10?) {
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, fbo)
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
         GLES20.glEnable(GLES20.GL_DEPTH_TEST)
 
         drawSolidVoxels()
         drawWireFrameVoxels()
+
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0) // Unbind FBO to render to screen
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
+
+        postProcessingPass();
     }
 
     private fun drawSolidVoxels() {
@@ -337,5 +423,30 @@ class EditorRenderer(
 
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0)
         GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0)
+    }
+
+    private fun postProcessingPass() {
+        GLES20.glUseProgram(postProgram)
+
+        val positionHandle = GLES20.glGetAttribLocation(postProgram, "vPosition")
+
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,  screenTex)
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(postProgram, "uTexture"), 0)
+
+        GLES20.glEnableVertexAttribArray(positionHandle)
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, vbo[2])
+        GLES20.glVertexAttribPointer(
+            positionHandle,
+            2,
+            GLES20.GL_FLOAT,
+            false,
+            0,
+            0
+        )
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+
+        GLES20.glDisableVertexAttribArray(positionHandle)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0)
     }
 }
