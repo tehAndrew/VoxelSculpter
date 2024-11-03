@@ -19,8 +19,8 @@ class PerspectiveCamera(
 
     // Will be set by the renderer
     private var aspectRatio = 0.0f
-    private var viewportWidth = 0
-    private var viewportHeight = 0
+    var viewportWidth = 0
+    var viewportHeight = 0
 
     // Transforms
     private val viewMatrix = FloatArray(16)

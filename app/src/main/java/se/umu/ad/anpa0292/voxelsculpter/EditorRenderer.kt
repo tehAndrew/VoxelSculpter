@@ -264,6 +264,25 @@ class EditorRenderer(
             0
         )
 
+        // Create a depth renderbuffer
+        val depthRenderbuffer = IntArray(1)
+        GLES20.glGenRenderbuffers(1, depthRenderbuffer, 0)
+        GLES20.glBindRenderbuffer(GLES20.GL_RENDERBUFFER, depthRenderbuffer[0])
+        GLES20.glRenderbufferStorage(GLES20.GL_RENDERBUFFER, GLES20.GL_DEPTH_COMPONENT16, width, height)
+
+        // Attach the depth renderbuffer to the framebuffer
+        GLES20.glFramebufferRenderbuffer(
+            GLES20.GL_FRAMEBUFFER,
+            GLES20.GL_DEPTH_ATTACHMENT,
+            GLES20.GL_RENDERBUFFER,
+            depthRenderbuffer[0]
+        )
+
+        val framebufferStatus = GLES20.glCheckFramebufferStatus(GLES20.GL_FRAMEBUFFER)
+        if (framebufferStatus != GLES20.GL_FRAMEBUFFER_COMPLETE) {
+            throw RuntimeException("Framebuffer incomplete: $ $framebufferStatus")
+        }
+
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
     }
 
@@ -288,7 +307,7 @@ class EditorRenderer(
         drawSolidVoxels()
         drawWireFrameVoxels()
 
-        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0) // Unbind FBO to render to screen
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
 
         postProcessingPass();
@@ -428,11 +447,18 @@ class EditorRenderer(
     private fun postProcessingPass() {
         GLES20.glUseProgram(postProgram)
 
-        val positionHandle = GLES20.glGetAttribLocation(postProgram, "vPosition")
+        val positionHandle = GLES20.glGetAttribLocation(postProgram, "aPosition")
+        val textureHandle = GLES20.glGetUniformLocation(postProgram, "uTexture")
+        val resolutionHandle = GLES20.glGetUniformLocation(postProgram, "uResolution")
 
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,  screenTex)
-        GLES20.glUniform1i(GLES20.glGetUniformLocation(postProgram, "uTexture"), 0)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, screenTex)
+        GLES20.glUniform1i(textureHandle, 0)
+
+        GLES20.glUniform2f(
+            resolutionHandle,
+            world.camera.viewportWidth.toFloat(), world.camera.viewportHeight.toFloat()
+        )
 
         GLES20.glEnableVertexAttribArray(positionHandle)
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, vbo[2])
