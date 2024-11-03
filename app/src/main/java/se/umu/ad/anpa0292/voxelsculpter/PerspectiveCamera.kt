@@ -104,6 +104,10 @@ class PerspectiveCamera(
         updateViewProjectionMatrix()
     }
 
+    fun getLookDirection(): Vector3D {
+        return (getPosition() - target).normalize()
+    }
+
     fun screenPosToWorldRay(screenPos: Vector3D): Ray {
         val ndcX = (2f * screenPos.x / viewportWidth) - 1f
         val ndcY = 1f - (2f * screenPos.y / viewportHeight)

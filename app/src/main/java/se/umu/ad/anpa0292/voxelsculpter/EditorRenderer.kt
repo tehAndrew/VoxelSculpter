@@ -320,6 +320,7 @@ class EditorRenderer(
         val normalHandle = GLES20.glGetAttribLocation(solidProgram, "vNormal")
         val mMatrixHandle = GLES20.glGetUniformLocation(solidProgram, "uMMatrix")
         val vpMatrixHandle = GLES20.glGetUniformLocation(solidProgram, "uVPMatrix")
+        val lightDirHandle = GLES20.glGetUniformLocation(solidProgram, "uLightDir")
 
         GLES20.glEnableVertexAttribArray(positionHandle)
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, vbo[0])
@@ -350,6 +351,9 @@ class EditorRenderer(
             world.camera.getTransform(),
             0
         )
+
+        val lightDir = world.camera.getLookDirection()
+        GLES20.glUniform3f(lightDirHandle, lightDir.x, lightDir.y, lightDir.z)
 
         // Bind the index buffer
         GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, ebo[0])
