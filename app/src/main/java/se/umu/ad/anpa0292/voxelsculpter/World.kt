@@ -42,8 +42,11 @@ class World() {
     fun addVoxelAtScreenPos(screenPos: Vector3D) {
         val result = getVoxelAtScreenPos(screenPos)
         result?.let { (voxel, _, normal) ->
-            val newVoxel = Voxel(voxel.pos + normal)
-            addVoxel(newVoxel)
+            val newVoxelPos = voxel.pos + normal
+            if (!voxels.any { it.pos == newVoxelPos }) {
+                val newVoxel = Voxel(newVoxelPos)
+                addVoxel(newVoxel)
+            }
         }
     }
 
